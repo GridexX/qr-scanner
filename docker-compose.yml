@@ -1,0 +1,59 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/qr_tracker.db}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - GTM_ID=${GTM_ID:-}
+      - IPGEOLOCATION_API_KEY=${IPGEOLOCATION_API_KEY:-}
+    volumes:
+      - qr-data:/app/data
+    restart: unless-stopped
+    container_name: qr-backend
+    command: go run main.go
+    develop:
+      watch:
+        - path: ./backend
+          action: sync+restart
+          target: /app
+    networks:
+      - qr-network
+
+  frontend:
+    container_name: qr-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+      - REACT_APP_GTM_ID=${GTM_ID:-}
+    depends_on:
+      - backend
+    develop:
+      watch:
+        - path: ./frontend
+          action: sync+restart
+          target: /app
+    restart: unless-stopped
+    networks:
+      - qr-network
+
+networks:
+  qr-network:
+    driver: bridge
+  
+
+volumes:
+  qr-data:

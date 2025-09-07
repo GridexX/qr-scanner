@@ -1,0 +1,53 @@
+services:
+  backend:
+    image: gridexX/qr-tracker-backend:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/qr_tracker.db}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - GTM_ID=${GTM_ID:-}
+      - IPGEOLOCATION_API_KEY=${IPGEOLOCATION_API_KEY:-}
+    volumes:
+      - qr-data:/app/data
+    restart: unless-stopped
+    networks:
+      - qr-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/analytics/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: gridexX/qr-tracker-frontend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+      - REACT_APP_GTM_ID=${GTM_ID:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - qr-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  qr-network:
+    driver: bridge
+
+volumes:
+  qr-data:
+    driver: local
