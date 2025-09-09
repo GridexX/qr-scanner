@@ -9,7 +9,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - BASE_URL=${BACKEND_URL:-http://localhost:8080}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - GTM_ID=${GTM_ID:-}
       - IPGEOLOCATION_API_KEY=${IPGEOLOCATION_API_KEY:-}
@@ -33,7 +33,7 @@ services:
     expose:
       - "3000"
     environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
+      - REACT_APP_API_URL=${BACKEND_URL:-http://localhost:8080}
       - REACT_APP_GTM_ID=${GTM_ID:-}
     depends_on:
       backend:
@@ -43,7 +43,7 @@ services:
       - qr-network
       - npm
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://0.0.0.0:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
