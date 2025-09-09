@@ -14,6 +14,8 @@ services:
       - GTM_ID=${GTM_ID:-}
       - IPGEOLOCATION_API_KEY=${IPGEOLOCATION_API_KEY:-}
       - GIN_MODE=${GIN_MODE:-release}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     volumes:
       - qr-data:/app/data
     restart: unless-stopped
@@ -32,6 +34,8 @@ services:
     container_name: qr-frontend
     expose:
       - "3000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     depends_on:
       backend:
         condition: service_healthy
