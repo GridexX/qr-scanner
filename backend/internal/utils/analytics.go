@@ -10,11 +10,13 @@ import (
 )
 
 type GeolocationResponse struct {
-	IP       string `json:"ip"`
-	Location struct {
-		CountryName string `json:"country_name"`
-		City        string `json:"city"`
-	} `json:"location"`
+	IP          string `json:"ip"`
+	CountryName string `json:"country_name"`
+	City        string `json:"city"`
+	State       string `json:"state_prov"`
+	Country     string `json:"country_code2"`
+	Latitude    string `json:"latitude"`
+	Longitude   string `json:"longitude"`
 }
 
 func GetGeolocation(ip string) (string, string, error) {
@@ -25,22 +27,29 @@ func GetGeolocation(ip string) (string, string, error) {
 
 	// Skip private IPs
 	if isPrivateIP(ip) {
-		return "", "", nil
+		return "Local", "Local", nil
 	}
 
-	url := fmt.Sprintf("https://api.ipgeolocation.io/v2/ipgeo?apiKey=%s&ip=%s", apiKey, ip)
+	url := fmt.Sprintf("https://api.ipgeolocation.io/ipgeo?apiKey=%s&ip=%s", apiKey, ip)
 	resp, err := http.Get(url)
 	if err != nil {
+		fmt.Printf("Error fetching geolocation for IP %s: %v\n", ip, err)
 		return "", "", err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("Geolocation API returned status %d for IP %s\n", resp.StatusCode, ip)
+		return "", "", fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+
 	var geoResp GeolocationResponse
 	if err := json.NewDecoder(resp.Body).Decode(&geoResp); err != nil {
+		fmt.Printf("Error decoding geolocation response for IP %s: %v\n", ip, err)
 		return "", "", err
 	}
 
-	return geoResp.Location.CountryName, geoResp.Location.City, nil
+	return geoResp.CountryName, geoResp.City, nil
 }
 
 func isPrivateIP(ip string) bool {

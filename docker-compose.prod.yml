@@ -1,6 +1,6 @@
 services:
   backend:
-    image: gridexX/qr-tracker-backend:latest
+    image: gridexx/qr-tracker-backend:latest
     ports:
       - "8080:8080"
     environment:
@@ -25,7 +25,7 @@ services:
       start_period: 40s
 
   frontend:
-    image: gridexX/qr-tracker-frontend:latest
+    image: gridexx/qr-tracker-frontend:latest
     ports:
       - "3000:3000"
     environment:

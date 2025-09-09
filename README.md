@@ -1,8 +1,8 @@
 # QR Code Tracker
 
 [![Build and Deploy](https://github.com/GridexX/qr-code-scanner/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/GridexX/qr-code-scanner/actions/workflows/ci-cd.yml)
-[![Docker Backend](https://img.shields.io/docker/pulls/gridexX/qr-tracker-backend)](https://hub.docker.com/r/gridexX/qr-tracker-backend)
-[![Docker Frontend](https://img.shields.io/docker/pulls/gridexX/qr-tracker-frontend)](https://hub.docker.com/r/gridexX/qr-tracker-frontend)
+[![Docker Backend](https://img.shields.io/docker/pulls/gridexx/qr-tracker-backend)](https://hub.docker.com/r/gridexx/qr-tracker-backend)
+[![Docker Frontend](https://img.shields.io/docker/pulls/gridexx/qr-tracker-frontend)](https://hub.docker.com/r/gridexx/qr-tracker-frontend)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/GridexX/qr-code-scanner?filename=backend%2Fgo.mod)](https://golang.org/)
 [![License](https://img.shields.io/github/license/GridexX/qr-code-scanner)](LICENSE)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com/)
@@ -26,8 +26,8 @@ docker-compose -f docker-compose.prod.yml up -d
 ```
 
 **Available Images:**
-- Backend: [`gridexX/qr-tracker-backend`](https://hub.docker.com/r/gridexX/qr-tracker-backend)
-- Frontend: [`gridexX/qr-tracker-frontend`](https://hub.docker.com/r/gridexX/qr-tracker-frontend)
+- Backend: [`gridexx/qr-tracker-backend`](https://hub.docker.com/r/gridexx/qr-tracker-backend)
+- Frontend: [`gridexx/qr-tracker-frontend`](https://hub.docker.com/r/gridexx/qr-tracker-frontend)
 
 ## Features
 
@@ -317,8 +317,8 @@ The pipeline runs on:
 
 | Service | Image | Tags | Architectures |
 |---------|-------|------|---------------|
-| Backend | `gridexX/qr-tracker-backend` | `latest`, `main`, `develop`, `v*` | `linux/amd64`, `linux/arm64` |
-| Frontend | `gridexX/qr-tracker-frontend` | `latest`, `main`, `develop`, `v*` | `linux/amd64`, `linux/arm64` |
+| Backend | `gridexx/qr-tracker-backend` | `latest`, `main`, `develop`, `v*` | `linux/amd64`, `linux/arm64` |
+| Frontend | `gridexx/qr-tracker-frontend` | `latest`, `main`, `develop`, `v*` | `linux/amd64`, `linux/arm64` |
 
 ### Dependency Management
 

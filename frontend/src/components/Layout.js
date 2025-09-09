@@ -16,6 +16,10 @@ const Layout = ({ children }) => {
     if (path === '/') {
       return location.pathname === '/';
     }
+    // Match '/qr-codes/new' exactly, but allow '/qr-codes/:id' for details
+    if (location.pathname === '/qr-codes/new') {
+      return path === '/qr-codes/new';
+    }
     return location.pathname.startsWith(path);
   };
 
