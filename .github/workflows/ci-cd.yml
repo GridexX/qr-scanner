@@ -194,7 +194,7 @@ jobs:
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
       env:
-        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        BACKEND_URL: ${{ secrets.BACKEND_URL }}
         GTM_ID: ${{ secrets.GTM_ID }}
 
   security-scan:
