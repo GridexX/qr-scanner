@@ -1,0 +1,143 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "docker:enableMajor",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":separatePatchReleases"
+  ],
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "assignees": ["@GridexX"],
+  "reviewers": ["@GridexX"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Group Go module updates",
+      "matchManagers": ["gomod"],
+      "groupName": "Go modules",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Group Node.js dependency updates",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "groupName": "Node.js dependencies",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Auto-merge patch updates for non-major dependencies",
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": "!/^0\\./",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true,
+      "assignees": [],
+      "reviewers": []
+    },
+    {
+      "description": "Auto-merge minor updates for selected safe packages",
+      "matchPackageNames": [
+        "github.com/gin-gonic/gin",
+        "github.com/gin-contrib/cors",
+        "react",
+        "react-dom",
+        "recharts",
+        "tailwindcss"
+      ],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Group Docker base image updates",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["golang", "node", "nginx", "alpine"],
+      "groupName": "Docker base images",
+      "schedule": ["before 6am on monday"],
+      "automerge": false
+    },
+    {
+      "description": "Separate major updates for manual review",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "automerge": false,
+      "schedule": ["at any time"],
+      "commitMessagePrefix": "feat(deps)!:"
+    },
+    {
+      "description": "High priority security updates",
+      "matchPackagePatterns": ["*"],
+      "matchDepTypes": ["dependencies"],
+      "vulnerabilityAlerts": {
+        "labels": ["security", "dependencies"],
+        "assignees": ["@GridexX"],
+        "schedule": ["at any time"],
+        "prPriority": 10
+      }
+    }
+  ],
+  "golang": {
+    "enabled": true,
+    "commitMessageTopic": "Go module {{depName}}"
+  },
+  "npm": {
+    "enabled": true,
+    "commitMessageTopic": "npm package {{depName}}"
+  },
+  "docker": {
+    "enabled": true,
+    "commitMessageTopic": "Docker tag {{depName}}"
+  },
+  "github-actions": {
+    "enabled": true,
+    "commitMessageTopic": "GitHub Action {{depName}}"
+  },
+  "regexManagers": [
+    {
+      "fileMatch": ["^Dockerfile$", "docker-compose\\.ya?ml$"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.*?['\"](?<currentValue>.*?)['\"]"
+      ]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Go version in Dockerfiles and GitHub Actions",
+      "fileMatch": ["^Dockerfile$", "^\\.github\\/workflows\\/.*\\.ya?ml$"],
+      "matchStrings": [
+        "golang:(?<currentValue>[0-9.]+)",
+        "go-version: ['\"](?<currentValue>[0-9.]+)['\"]"
+      ],
+      "depNameTemplate": "golang",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Node.js version in Dockerfiles and GitHub Actions",
+      "fileMatch": ["^Dockerfile$", "^\\.github\\/workflows\\/.*\\.ya?ml$"],
+      "matchStrings": [
+        "node:(?<currentValue>[0-9.]+)",
+        "node-version: ['\"](?<currentValue>[0-9.]+)['\"]"
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "labels": ["security"]
+  }
+}

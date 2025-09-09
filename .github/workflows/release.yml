@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: docker.io
+  BACKEND_IMAGE_NAME: qr-tracker-backend
+  FRONTEND_IMAGE_NAME: qr-tracker-frontend
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      with:
+        fetch-depth: 0
+
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 HEAD^)
+        
+        # Generate changelog
+        echo "## What's Changed" > release_notes.md
+        echo "" >> release_notes.md
+        
+        # Get commits since last tag
+        git log ${LATEST_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges >> release_notes.md
+        
+        # Add Docker images section
+        echo "" >> release_notes.md
+        echo "## Docker Images" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "- Backend: \`${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${GITHUB_REF#refs/tags/}\`" >> release_notes.md
+        echo "- Frontend: \`${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:${GITHUB_REF#refs/tags/}\`" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "## Quick Deploy" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "\`\`\`bash" >> release_notes.md
+        echo "# Update your docker-compose.yml or docker-compose.prod.yml:" >> release_notes.md
+        echo "services:" >> release_notes.md
+        echo "  backend:" >> release_notes.md
+        echo "    image: ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${GITHUB_REF#refs/tags/}" >> release_notes.md
+        echo "  frontend:" >> release_notes.md
+        echo "    image: ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:${GITHUB_REF#refs/tags/}" >> release_notes.md
+        echo "" >> release_notes.md
+        echo "docker-compose up -d" >> release_notes.md
+        echo "\`\`\`" >> release_notes.md
+        
+        echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@6cbd405e2c4e67a21c47fa9e383d020e4e28b836
+      with:
+        name: Release ${{ github.ref_name }}
+        body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-production-compose:
+    needs: create-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update production docker-compose
+      run: |
+        # Update docker-compose.prod.yml with new version
+        sed -i "s|gridexx/qr-tracker-backend:.*|gridexx/qr-tracker-backend:${GITHUB_REF#refs/tags/}|g" docker-compose.prod.yml
+        sed -i "s|gridexx/qr-tracker-frontend:.*|gridexx/qr-tracker-frontend:${GITHUB_REF#refs/tags/}|g" docker-compose.prod.yml
+
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docker-compose.prod.yml
+        git commit -m "chore: update production compose to ${GITHUB_REF#refs/tags/}" || exit 0
+        git push
+
+  notify-deployment:
+    needs: [create-release, update-production-compose]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Deployment notification
+      run: |
+        echo "🎉 Release ${{ github.ref_name }} is ready!"
+        echo ""
+        echo "📦 Docker Images:"
+        echo "- Backend: ${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.ref_name }}"
+        echo "- Frontend: ${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.ref_name }}"
+        echo ""
+        echo "🚀 Deploy with:"
+        echo "docker-compose -f docker-compose.prod.yml up -d"
