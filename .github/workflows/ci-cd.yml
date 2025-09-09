@@ -199,6 +199,10 @@ jobs:
         args:
           BACKEND_URL=${{ secrets.BACKEND_URL }}
           GTM_ID=${{ secrets.GTM_ID }}
+      env:
+        BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        REACT_APP_API_URL: ${{ secrets.BACKEND_URL }}
+        GTM_ID: ${{ secrets.GTM_ID }}
 
   security-scan:
     runs-on: ubuntu-latest
