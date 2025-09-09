@@ -55,6 +55,11 @@ func main() {
 	r.GET("/r/:code", h.RedirectQR)                 // QR code redirect route
 	r.Static("/data/qr_images", "./data/qr_images") // Serve QR code images
 
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	// Protected routes
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
