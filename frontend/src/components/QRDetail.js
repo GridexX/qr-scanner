@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
+import { useCallback } from 'react';
 
 const QRDetail = () => {
   const { id } = useParams();
@@ -9,15 +10,11 @@ const QRDetail = () => {
   const [loading, setLoading] = useState(true);
   const [qrImageUrl, setQrImageUrl] = useState('');
 
-  useEffect(() => {
-    fetchQRAnalytics();
-  }, [id]);
-
-  const fetchQRAnalytics = async () => {
+  const fetchQRAnalytics = useCallback(async () => {
     try {
       const response = await api.get(`/api/analytics/qr/${id}`);
       setAnalytics(response.data);
-      
+
       // Set QR image URL
       const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
       setQrImageUrl(`${baseUrl}/data/qr_images/${response.data.qr_code.code}.png`);
@@ -26,7 +23,11 @@ const QRDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchQRAnalytics();
+  }, [fetchQRAnalytics]);
 
   const downloadQRCode = () => {
     const link = document.createElement('a');
