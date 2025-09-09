@@ -193,9 +193,12 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
-      env:
-        BACKEND_URL: ${{ secrets.BACKEND_URL }}
-        GTM_ID: ${{ secrets.GTM_ID }}
+        build-args:
+          BACKEND_URL=${{ secrets.BACKEND_URL }}
+          GTM_ID=${{ secrets.GTM_ID }}
+        args:
+          BACKEND_URL=${{ secrets.BACKEND_URL }}
+          GTM_ID=${{ secrets.GTM_ID }}
 
   security-scan:
     runs-on: ubuntu-latest
