@@ -11,6 +11,8 @@ env:
   REGISTRY: docker.io
   BACKEND_IMAGE_NAME: qr-tracker-backend
   FRONTEND_IMAGE_NAME: qr-tracker-frontend
+  FRONTEND_URL: ${secrets.FRONTEND_URL}
+  BACKEND_URL: ${secrets.BACKEND_URL}
 
 jobs:
   test-backend:
@@ -19,8 +21,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      with:
-        path: backend
 
     - name: Set up Go
       uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
@@ -65,9 +65,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
-      # Only checkout the frontend directory to save time and space
-      with:
-        path: frontend
 
     - name: Set up Node.js
       uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
@@ -103,9 +100,6 @@ jobs:
         path: frontend/build/
 
   build-and-push-backend:
-    strategy:
-      matrix:
-        image: [ front, latest ]
     needs: test-backend
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
@@ -145,6 +139,14 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
+      env:
+        BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        GTM_ID: ${{ secrets.GTM_ID }}
+        IPGEOLOCATION_API_KEY: ${{ secrets.IPGEOLOCATION_API_KEY }}
+        ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
 
   build-and-push-frontend:
     needs: test-frontend
@@ -186,6 +188,9 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
         platforms: linux/amd64,linux/arm64
+      env:
+        FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        GTM_ID: ${{ secrets.GTM_ID }}
 
   security-scan:
     runs-on: ubuntu-latest

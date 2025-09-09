@@ -32,9 +32,6 @@ services:
     container_name: qr-frontend
     expose:
       - "3000"
-    environment:
-      - REACT_APP_API_URL=${BACKEND_URL:-http://localhost:8080}
-      - REACT_APP_GTM_ID=${GTM_ID:-}
     depends_on:
       backend:
         condition: service_healthy
