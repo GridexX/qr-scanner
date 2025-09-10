@@ -211,7 +211,7 @@ jobs:
         output: 'backend-trivy-results.sarif'
 
     - name: Upload Trivy scan results for backend
-      uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe
+      uses: github/codeql-action/upload-sarif@52ddbe1e52470867810e1223f76c0fc80936b725
       if: always()
       with:
         sarif_file: 'backend-trivy-results.sarif'
@@ -225,7 +225,7 @@ jobs:
         skip-setup-trivy: true
 
     - name: Upload Trivy scan results for frontend
-      uses: github/codeql-action/upload-sarif@86b04fb0e47484f7282357688f21d5d0e32175fe
+      uses: github/codeql-action/upload-sarif@52ddbe1e52470867810e1223f76c0fc80936b725
       if: always()
       with:
         sarif_file: 'frontend-trivy-results.sarif'
