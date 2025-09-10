@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api';
 import { useCallback } from 'react';
 
 const QRDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrImageUrl, setQrImageUrl] = useState('');
@@ -43,6 +44,18 @@ const QRDetail = () => {
     alert('Copied to clipboard!');
   };
 
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this QR code? This action cannot be undone.')) {
+      try {
+        await api.delete(`/api/qr/${id}`);
+        navigate('/qr-codes');
+      } catch (error) {
+        console.error('Error deleting QR code:', error);
+        alert('Failed to delete QR code');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -69,17 +82,25 @@ const QRDetail = () => {
   return (
     <div className="px-4 py-6 sm:px-0">
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{qr_code.title}</h1>
             <p className="mt-2 text-gray-600">QR Code Analytics and Details</p>
           </div>
-          <Link
-            to="/qr-codes"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            ← Back to QR Codes
-          </Link>
+          <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <Link
+              to="/qr-codes"
+              className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            >
+              ← Back to QR Codes
+            </Link>
+            <button
+              onClick={handleDelete}
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Delete QR Code
+            </button>
+          </div>
         </div>
       </div>
 
