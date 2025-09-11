@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setIsAuthenticated(true);
-      setUser(localStorage.getItem('user'));
+      setUser(JSON.parse(localStorage.getItem('user')));
     }
     setLoading(false);
   }, []);
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
-      localStorage.setItem('user', user);
+      localStorage.setItem('user', JSON.stringify(user));
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       setIsAuthenticated(true);

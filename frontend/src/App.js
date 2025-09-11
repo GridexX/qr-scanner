@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
+import Signin from './components/Signin';
 import Dashboard from './components/Dashboard';
 import QRList from './components/QRList';
 import QRDetail from './components/QRDetail';
@@ -15,6 +16,7 @@ function App() {
         <div className="min-h-screen bg-gray-50">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/signin" element={<Signin />} />
             <Route path="/*" element={<ProtectedRoutes />} />
           </Routes>
         </div>
