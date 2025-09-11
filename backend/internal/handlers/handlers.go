@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/GridexX/qr-tracker/internal/database"
 	"github.com/GridexX/qr-tracker/internal/models"
 	"github.com/GridexX/qr-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -23,10 +25,18 @@ func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
 }
 
+func generateUniqueCode() (string, error) {
+	bytes := make([]byte, 4)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
 func (h *Handler) findUser(username string) (*models.User, error) {
 	var existingUser models.User
-	query := `SELECT id, user_code_id, username, created_at FROM users WHERE username = ?`
-	err := h.db.QueryRow(query, username).Scan(&existingUser.ID, &existingUser.UserCodeID, &existingUser.Username, &existingUser.CreatedAt)
+	query := `SELECT id, username, created_at FROM users WHERE username = ?`
+	err := h.db.QueryRow(query, username).Scan(&existingUser.ID, &existingUser.Username, &existingUser.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -62,14 +72,13 @@ func (h *Handler) Signin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
 		return
 	}
-	userCodeId, err := database.GenerateUniqueCode()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate user code"})
 		return
 	}
 
-	query := `INSERT INTO users (username, password_hash, user_code_id) VALUES (?, ?, ?)`
-	_, err = h.db.Exec(query, req.Username, encryptedPassword, userCodeId)
+	query := `INSERT INTO users (username, password_hash) VALUES (?, ?)`
+	_, err = h.db.Exec(query, req.Username, encryptedPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
 		return
@@ -90,13 +99,14 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	query := `
-		SELECT u.id, u.user_code_id, u.username, u.created_at, u.password_hash
+		SELECT u.id, u.username, u.created_at, u.password_hash
 		FROM users u
 		WHERE u.username = ?
 	`
 
 	var user models.User
-	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.UserCodeID, &user.Username, &user.CreatedAt, &user.PasswordHash); err != nil {
+	var userPasswordHash string
+	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.Username, &user.CreatedAt, &userPasswordHash); err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
@@ -105,15 +115,23 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	passwordMatches := utils.CheckPasswordHash(req.Password, user.PasswordHash)
+	passwordMatches := utils.CheckPasswordHash(req.Password, userPasswordHash)
 	if !passwordMatches {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
+	// Create a user response
+	userResponse := models.User{
+		ID:        user.ID,
+		Username:  user.Username,
+		CreatedAt: user.CreatedAt,
+	}
+
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": req.Username,
+		"username": userResponse.Username,
+		"userID":   userResponse.ID,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
@@ -124,14 +142,6 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	// Create a user response without password hash
-	userResponse := models.User{
-		ID:         user.ID,
-		UserCodeID: user.UserCodeID,
-		Username:   user.Username,
-		CreatedAt:  user.CreatedAt,
-	}
-
 	c.JSON(http.StatusOK, models.LoginResponse{
 		Token: tokenString,
 		User:  userResponse,
@@ -139,6 +149,13 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) CreateQR(c *gin.Context) {
+	// Retrieve the user from the JWT claims in the context (set by AuthMiddleware)
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	var req models.CreateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -157,16 +174,16 @@ func (h *Handler) CreateQR(c *gin.Context) {
 	}
 
 	// Generate unique code
-	code, err := database.GenerateUniqueCode()
+	code, err := generateUniqueCode()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate QR code"})
 		return
 	}
 
 	// Insert into database
-	query := `INSERT INTO qr_codes (code, title, target_url, background_color, foreground_color, size) 
-			  VALUES (?, ?, ?, ?, ?, ?)`
-	result, err := h.db.Exec(query, code, req.Title, req.TargetURL, req.BackgroundColor, req.ForegroundColor, req.Size)
+	query := `INSERT INTO qr_codes (code, title, target_url, background_color, foreground_color, size, user_id) 
+			  VALUES (?, ?, ?, ?, ?, ?,?)`
+	result, err := h.db.Exec(query, code, req.Title, req.TargetURL, req.BackgroundColor, req.ForegroundColor, req.Size, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create QR code"})
 		return
@@ -210,17 +227,25 @@ func (h *Handler) CreateQR(c *gin.Context) {
 }
 
 func (h *Handler) ListQR(c *gin.Context) {
+
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	query := `
 		SELECT q.id, q.code, q.title, q.target_url, q.background_color, q.foreground_color, 
-			   q.size, q.logo_path, q.created_at, q.updated_at, COALESCE(COUNT(s.id), 0) as total_scans
+			   q.size, q.logo_path, q.created_at, q.updated_at, COALESCE(COUNT(s.id), 0) as total_scans, q.user_id
 		FROM qr_codes q 
 		LEFT JOIN qr_scans s ON q.id = s.qr_code_id 
+		WHERE q.user_id = ?
 		GROUP BY q.id, q.code, q.title, q.target_url, q.background_color, q.foreground_color, 
-				 q.size, q.logo_path, q.created_at, q.updated_at
+				 q.size, q.logo_path, q.created_at, q.updated_at, q.user_id
 		ORDER BY q.created_at DESC
 	`
 
-	rows, err := h.db.Query(query)
+	rows, err := h.db.Query(query, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch QR codes"})
 		return
@@ -231,8 +256,9 @@ func (h *Handler) ListQR(c *gin.Context) {
 	for rows.Next() {
 		var qr models.QRCode
 		var logoPath sql.NullString
+		var userIDFromDB int // Add this to match the selected user_id field
 		err := rows.Scan(&qr.ID, &qr.Code, &qr.Title, &qr.TargetURL, &qr.BackgroundColor,
-			&qr.ForegroundColor, &qr.Size, &logoPath, &qr.CreatedAt, &qr.UpdatedAt, &qr.TotalScans)
+			&qr.ForegroundColor, &qr.Size, &logoPath, &qr.CreatedAt, &qr.UpdatedAt, &qr.TotalScans, &userIDFromDB)
 		if err != nil {
 			continue
 		}
@@ -253,19 +279,25 @@ func (h *Handler) ListQR(c *gin.Context) {
 func (h *Handler) GetQR(c *gin.Context) {
 	id := c.Param("id")
 
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	query := `
 		SELECT q.id, q.code, q.title, q.target_url, q.background_color, q.foreground_color, 
 			   q.size, q.logo_path, q.created_at, q.updated_at, COALESCE(COUNT(s.id), 0) as total_scans
 		FROM qr_codes q 
 		LEFT JOIN qr_scans s ON q.id = s.qr_code_id 
-		WHERE q.id = ?
+		WHERE q.id = ? AND q.user_id = ?
 		GROUP BY q.id, q.code, q.title, q.target_url, q.background_color, q.foreground_color, 
 				 q.size, q.logo_path, q.created_at, q.updated_at
 	`
 
 	var qr models.QRCode
 	var logoPath sql.NullString
-	err := h.db.QueryRow(query, id).Scan(&qr.ID, &qr.Code, &qr.Title, &qr.TargetURL,
+	err := h.db.QueryRow(query, id, userID).Scan(&qr.ID, &qr.Code, &qr.Title, &qr.TargetURL,
 		&qr.BackgroundColor, &qr.ForegroundColor, &qr.Size, &logoPath, &qr.CreatedAt, &qr.UpdatedAt, &qr.TotalScans)
 
 	if err == sql.ErrNoRows {
@@ -286,6 +318,11 @@ func (h *Handler) GetQR(c *gin.Context) {
 
 func (h *Handler) UpdateQR(c *gin.Context) {
 	id := c.Param("id")
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	var req models.CreateQRRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -293,10 +330,10 @@ func (h *Handler) UpdateQR(c *gin.Context) {
 	}
 
 	query := `UPDATE qr_codes SET title = ?, target_url = ?, background_color = ?, 
-			  foreground_color = ?, size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+			  foreground_color = ?, size = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`
 
 	result, err := h.db.Exec(query, req.Title, req.TargetURL, req.BackgroundColor,
-		req.ForegroundColor, req.Size, id)
+		req.ForegroundColor, req.Size, id, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update QR code"})
 		return
@@ -313,10 +350,14 @@ func (h *Handler) UpdateQR(c *gin.Context) {
 
 func (h *Handler) DeleteQR(c *gin.Context) {
 	id := c.Param("id")
-
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	// Get the QR code to delete associated files
 	var code string
-	err := h.db.QueryRow("SELECT code FROM qr_codes WHERE id = ?", id).Scan(&code)
+	err := h.db.QueryRow("SELECT code FROM qr_codes WHERE id = ? AND user_id = ?", id, userID).Scan(&code)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusNotFound, gin.H{"error": "QR code not found"})
 		return
@@ -432,34 +473,55 @@ func (h *Handler) RedirectQR(c *gin.Context) {
 
 func (h *Handler) GetAnalyticsOverview(c *gin.Context) {
 	var overview models.AnalyticsOverview
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 
 	// Total QR codes
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_codes").Scan(&overview.TotalQRCodes)
+	h.db.QueryRow("SELECT COUNT(*) FROM qr_codes WHERE user_id = ?", userID).Scan(&overview.TotalQRCodes)
 
 	// Total scans
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_scans").Scan(&overview.TotalScans)
+	h.db.QueryRow(`SELECT COUNT(*) 
+	               FROM qr_scans
+				   LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+				   WHERE user_id = ?`, userID).Scan(&overview.TotalScans)
 
 	// Scans today
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_scans WHERE DATE(scanned_at) = DATE('now')").Scan(&overview.ScansToday)
+	h.db.QueryRow(`SELECT COUNT(*) 
+	               FROM qr_scans
+				   LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+				   WHERE DATE(scanned_at) = DATE('now') AND qr_codes.user_id = ?`, userID).Scan(&overview.ScansToday)
 
 	// Scans this week
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_scans WHERE DATE(scanned_at) >= DATE('now', '-7 days')").Scan(&overview.ScansThisWeek)
+	h.db.QueryRow(`SELECT COUNT(*) 
+	               FROM qr_scans
+				   LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+				   WHERE DATE(scanned_at) >= DATE('now', '-7 days') AND qr_codes.user_id = ?`, userID).Scan(&overview.ScansThisWeek)
 
 	// Scans this month
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_scans WHERE DATE(scanned_at) >= DATE('now', 'start of month')").Scan(&overview.ScansThisMonth)
+	h.db.QueryRow(`SELECT COUNT(*) 
+	               FROM qr_scans
+				   LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+				   WHERE DATE(scanned_at) >= DATE('now', 'start of month') AND qr_codes.user_id = ?`, userID).Scan(&overview.ScansThisMonth)
 
 	c.JSON(http.StatusOK, overview)
 }
 
 func (h *Handler) GetQRAnalytics(c *gin.Context) {
 	id := c.Param("id")
-
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	// Get QR code details
 	var qr models.QRCode
 	var logoPath sql.NullString
 	qrQuery := `SELECT id, code, title, target_url, background_color, foreground_color, 
-				 size, logo_path, created_at, updated_at FROM qr_codes WHERE id = ?`
-	err := h.db.QueryRow(qrQuery, id).Scan(&qr.ID, &qr.Code, &qr.Title, &qr.TargetURL,
+				 size, logo_path, created_at, updated_at FROM qr_codes WHERE id = ? AND user_id = ?`
+	err := h.db.QueryRow(qrQuery, id, userID).Scan(&qr.ID, &qr.Code, &qr.Title, &qr.TargetURL,
 		&qr.BackgroundColor, &qr.ForegroundColor, &qr.Size, &logoPath, &qr.CreatedAt, &qr.UpdatedAt)
 
 	if err == sql.ErrNoRows {
@@ -467,6 +529,7 @@ func (h *Handler) GetQRAnalytics(c *gin.Context) {
 		return
 	}
 	if err != nil {
+		log.Printf("Error in 1st query (%v): %v", err, qrQuery)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch QR code"})
 		return
 	}
@@ -477,14 +540,23 @@ func (h *Handler) GetQRAnalytics(c *gin.Context) {
 
 	// Get total scans
 	var totalScans int
-	h.db.QueryRow("SELECT COUNT(*) FROM qr_scans WHERE qr_code_id = ?", id).Scan(&totalScans)
-
-	// Get recent scans
-	recentScansQuery := `SELECT id, qr_code_id, ip_address, user_agent, country, city, 
-						 browser, device_type, scanned_at FROM qr_scans 
-						 WHERE qr_code_id = ? ORDER BY scanned_at DESC LIMIT 10`
-	rows, err := h.db.Query(recentScansQuery, id)
+	err = h.db.QueryRow(`SELECT COUNT(*) 
+				   FROM qr_scans
+				   LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+				   WHERE qr_code_id = ? AND qr_codes.user_id = ?`, id, userID).Scan(&totalScans)
 	if err != nil {
+		log.Printf("Error in 2nd query (%v)", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch total scans"})
+		return
+	}
+	// Get recent scans
+	recentScansQuery := `SELECT qr_scans.id, qr_code_id, ip_address, user_agent, country, city, 
+						 browser, device_type, scanned_at FROM qr_scans
+						 LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+						 WHERE qr_code_id = ? AND qr_codes.user_id = ? ORDER BY scanned_at DESC LIMIT 10`
+	rows, err := h.db.Query(recentScansQuery, id, userID)
+	if err != nil {
+		log.Printf("Error in 3thr query (%v): %v", err, recentScansQuery)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch recent scans"})
 		return
 	}
@@ -518,12 +590,14 @@ func (h *Handler) GetQRAnalytics(c *gin.Context) {
 	timeSeriesQuery := `
 		SELECT DATE(scanned_at) as date, COUNT(*) as scans 
 		FROM qr_scans 
-		WHERE qr_code_id = ? AND scanned_at >= DATE('now', '-30 days')
+		LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+		WHERE qr_code_id = ? AND scanned_at >= DATE('now', '-30 days') AND qr_codes.user_id = ?
 		GROUP BY DATE(scanned_at) 
 		ORDER BY date
 	`
-	timeRows, err := h.db.Query(timeSeriesQuery, id)
+	timeRows, err := h.db.Query(timeSeriesQuery, id, userID)
 	if err != nil {
+		log.Printf("Error in 4th query (%v): %v", err, timeSeriesQuery)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch time series data"})
 		return
 	}
@@ -559,16 +633,21 @@ func (h *Handler) GetQRAnalytics(c *gin.Context) {
 
 func (h *Handler) GetTimeSeriesData(c *gin.Context) {
 	days := c.DefaultQuery("days", "30")
-
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	query := fmt.Sprintf(`
 		SELECT DATE(scanned_at) as date, COUNT(*) as scans 
 		FROM qr_scans 
-		WHERE scanned_at >= DATE('now', '-%s days')
+		LEFT JOIN qr_codes ON qr_scans.qr_code_id = qr_codes.id
+		WHERE scanned_at >= DATE('now', '-%s days') AND qr_codes.user_id = ?
 		GROUP BY DATE(scanned_at) 
 		ORDER BY date
 	`, days)
 
-	rows, err := h.db.Query(query)
+	rows, err := h.db.Query(query, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch time series data"})
 		return

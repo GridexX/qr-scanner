@@ -42,11 +42,9 @@ type LoginRequest struct {
 }
 
 type User struct {
-	ID           int    `json:"id"`
-	UserCodeID   string `json:"user_code_id"`
-	Username     string `json:"username"`
-	PasswordHash string
-	CreatedAt    time.Time `json:"created_at"`
+	ID        int       `json:"id"`
+	Username  string    `json:"username"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type LoginResponse struct {
@@ -55,7 +53,7 @@ type LoginResponse struct {
 }
 
 type SigninResponse struct {
-	User User   `json:"user"`
+	User User `json:"user"`
 }
 
 type SigninRequest struct {

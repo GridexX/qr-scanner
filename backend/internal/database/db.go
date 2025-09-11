@@ -1,9 +1,7 @@
 package database
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"os"
 	"strings"
 
@@ -11,14 +9,6 @@ import (
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
 )
-
-func GenerateUniqueCode() (string, error) {
-	bytes := make([]byte, 4)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
-}
 
 func Initialize() (*sql.DB, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -65,12 +55,7 @@ func createAdminAccount(db *sql.DB, username, passwordHash string) error {
 		return nil // Admin account already exists
 	}
 
-	adminCode, err := GenerateUniqueCode()
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec("INSERT INTO users (user_code_id, username, password_hash) VALUES (?, ?, ?)", adminCode, username, passwordHash)
+	_, err = db.Exec("INSERT INTO users (username, password_hash) VALUES (?, ?)", username, passwordHash)
 	return err
 }
 
@@ -79,6 +64,7 @@ func createTables(db *sql.DB) error {
 		`CREATE TABLE IF NOT EXISTS qr_codes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			code TEXT UNIQUE NOT NULL,
+			user_id INTEGER NOT NULL,
 			title TEXT NOT NULL,
 			target_url TEXT NOT NULL,
 			background_color TEXT DEFAULT '#FFFFFF',
@@ -86,7 +72,8 @@ func createTables(db *sql.DB) error {
 			size INTEGER DEFAULT 256,
 			logo_path TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS qr_scans (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,7 +89,6 @@ func createTables(db *sql.DB) error {
 		)`,
 		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			user_code_id INTEGER NOT NULL,
 			username TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
