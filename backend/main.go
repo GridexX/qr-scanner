@@ -52,10 +52,6 @@ func main() {
 		allowedOrigins = append(allowedOrigins, "http://localhost:3001") // Common dev port
 	}
 
-	log.Printf("CORS Configuration:")
-	log.Printf("  Allowed Origins: %v", allowedOrigins)
-	log.Printf("  Frontend URL from env: %s", frontendURL)
-
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -76,9 +72,9 @@ func main() {
 
 	// Public routes
 	r.POST("/api/auth/login", h.Login)
+	r.POST("/api/auth/signin", h.Signin)
 	r.GET("/r/:code", h.RedirectQR)                 // QR code redirect route
 	r.Static("/data/qr_images", "./data/qr_images") // Serve QR code images
-
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

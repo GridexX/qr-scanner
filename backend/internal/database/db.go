@@ -58,8 +58,16 @@ func createTables(db *sql.DB) error {
 			scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (qr_code_id) REFERENCES qr_codes (id) ON DELETE CASCADE
 		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_code_id INTEGER NOT NULL,
+			username TEXT UNIQUE NOT NULL,
+			password_hash TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_qr_scans_qr_code_id ON qr_scans(qr_code_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_qr_scans_scanned_at ON qr_scans(scanned_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)`,
 	}
 
 	for _, query := range queries {

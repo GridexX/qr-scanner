@@ -1,4 +1,3 @@
-
 package models
 
 import "time"
@@ -42,9 +41,26 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type User struct {
+	ID           int    `json:"id"`
+	UserCodeID   string `json:"user_code_id"`
+	Username     string `json:"username"`
+	PasswordHash string
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type LoginResponse struct {
 	Token string `json:"token"`
-	User  string `json:"user"`
+	User  User   `json:"user"`
+}
+
+type SigninResponse struct {
+	User User   `json:"user"`
+}
+
+type SigninRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type AnalyticsOverview struct {

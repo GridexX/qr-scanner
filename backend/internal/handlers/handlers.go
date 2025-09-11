@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -24,6 +25,73 @@ func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
 }
 
+func generateUniqueCode() (string, error) {
+	bytes := make([]byte, 4)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+func (h *Handler) findUser(username string) (*models.User, error) {
+	var existingUser models.User
+	query := `SELECT id, user_code_id, username, created_at FROM users WHERE username = ?`
+	err := h.db.QueryRow(query, username).Scan(&existingUser.ID, &existingUser.UserCodeID, &existingUser.Username, &existingUser.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	return &existingUser, nil
+}
+
+func (h *Handler) Signin(c *gin.Context) {
+	var req models.SigninRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Ensure the username is not already taken
+	var existingUser *models.User
+	existingUser, err := h.findUser(req.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not check username availability"})
+		return
+	}
+
+	if existingUser != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Username is already taken"})
+		return
+	}
+
+	encryptedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+		return
+	}
+	userCodeId, err := generateUniqueCode()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate user code"})
+		return
+	}
+
+	query := `INSERT INTO users (username, password_hash, user_code_id) VALUES (?, ?, ?)`
+	_, err = h.db.Exec(query, req.Username, encryptedPassword, userCodeId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
+		return
+	}
+	existingUser, err = h.findUser(req.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve created user"})
+		return
+	}
+	c.JSON(http.StatusCreated, models.SigninResponse{User: *existingUser})
+}
+
 func (h *Handler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,17 +107,43 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	if req.Username != adminUsername {
+	query := `
+		SELECT u.id, u.user_code_id, u.username, u.created_at, u.password_hash
+		FROM users u
+		WHERE u.username = ?
+	`
+
+	var user models.User
+	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.UserCodeID, &user.Username, &user.CreatedAt, &user.PasswordHash); err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("[LOGIN] User not found: %s", req.Username)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			return
+		}
+		log.Printf("[LOGIN] DB error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve user"})
+		return
+	}
+
+	passwordMatches := utils.CheckPasswordHash(req.Password, user.PasswordHash)
+	if !passwordMatches {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	// For simplicity, we'll compare plain text password
-	// In production, you should hash the admin password
-	if req.Password != adminPassword {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-	}
+	// TODO Add the admin username on the users table and check against it
+	// During the initial setup
+	// if req.Username != adminUsername {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	// 	return
+	// }
+
+	// // For simplicity, we'll compare plain text password
+	// // In production, you should hash the admin password
+	// if req.Password != adminPassword {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	// 	return
+	// }
 
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -64,9 +158,17 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
+	// Create a user response without password hash
+	userResponse := models.User{
+		ID:         user.ID,
+		UserCodeID: user.UserCodeID,
+		Username:   user.Username,
+		CreatedAt:  user.CreatedAt,
+	}
+
 	c.JSON(http.StatusOK, models.LoginResponse{
 		Token: tokenString,
-		User:  req.Username,
+		User:  userResponse,
 	})
 }
 
@@ -139,14 +241,6 @@ func (h *Handler) CreateQR(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, qrCode)
-}
-
-func generateUniqueCode() (string, error) {
-	bytes := make([]byte, 4)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
 }
 
 func (h *Handler) ListQR(c *gin.Context) {
