@@ -1,0 +1,10 @@
+{
+  "name": "qr-tracker-mock-api",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "json-server --watch db.json --port 3001 --host 0.0.0.0"
+  },
+  "devDependencies": {
+    "json-server": "^0.17.4"
+  }
+}

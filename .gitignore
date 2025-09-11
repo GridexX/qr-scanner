@@ -20,7 +20,7 @@ backend/qr-tracker
 backend/*.exe
 
 # Node.js specific
-frontend/node_modules/
+**/node_modules
 frontend/build/
 frontend/dist/
 npm-debug.log*

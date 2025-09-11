@@ -55,7 +55,7 @@ func createAdminAccount(db *sql.DB, username, passwordHash string) error {
 		return nil // Admin account already exists
 	}
 
-	_, err = db.Exec("INSERT INTO users (username, password_hash) VALUES (?, ?)", username, passwordHash)
+	_, err = db.Exec("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", username, passwordHash, "admin")
 	return err
 }
 
@@ -91,7 +91,8 @@ func createTables(db *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			role TEXT DEFAULT 'user'
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_qr_scans_qr_code_id ON qr_scans(qr_code_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_qr_scans_scanned_at ON qr_scans(scanned_at)`,

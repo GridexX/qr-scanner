@@ -11,6 +11,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'QR Codes', href: '/qr-codes' },
     { name: 'Create QR', href: '/qr-codes/new', hideOnMobile: true },
+    { name: 'Admin', href: '/admin' },
   ];
 
   const isActive = (path) => {

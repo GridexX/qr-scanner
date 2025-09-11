@@ -1,0 +1,502 @@
+{
+  "pricingTiers": [
+    {
+      "id": 1,
+      "name": "Free",
+      "description": "Perfect for getting started",
+      "monthlyPrice": 0,
+      "isActive": true,
+      "features": {
+        "maxQRCodes": 5,
+        "maxScansPerMonth": 100,
+        "maxExpirationDays": 30,
+        "allowLifetimeQR": false,
+        "allowDynamicQR": false,
+        "customBranding": false,
+        "analytics": "basic",
+        "support": "community"
+      },
+      "costs": {
+        "additionalQRCode": 0.5,
+        "additionalScan": 0.01,
+        "extendExpiration": 0.1,
+        "lifetimeQRUpgrade": 5
+      },
+      "defaultQRSettings": {
+        "expirationDays": 7,
+        "isDynamic": false,
+        "isLifetime": false
+      },
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Starter",
+      "description": "For small businesses and individuals",
+      "monthlyPrice": 9.99,
+      "isActive": true,
+      "features": {
+        "maxQRCodes": 50,
+        "maxScansPerMonth": 2500,
+        "maxExpirationDays": 365,
+        "allowLifetimeQR": true,
+        "allowDynamicQR": true,
+        "customBranding": false,
+        "analytics": "standard",
+        "support": "email"
+      },
+      "costs": {
+        "additionalQRCode": 0.25,
+        "additionalScan": 0.005,
+        "extendExpiration": 0.05,
+        "lifetimeQRUpgrade": 2
+      },
+      "defaultQRSettings": {
+        "expirationDays": 90,
+        "isDynamic": true,
+        "isLifetime": false
+      },
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": 3,
+      "name": "Professional",
+      "description": "For growing teams and businesses",
+      "monthlyPrice": 29.99,
+      "isActive": true,
+      "features": {
+        "maxQRCodes": 200,
+        "maxScansPerMonth": 10000,
+        "maxExpirationDays": -1,
+        "allowLifetimeQR": true,
+        "allowDynamicQR": true,
+        "customBranding": true,
+        "analytics": "advanced",
+        "support": "priority"
+      },
+      "costs": {
+        "additionalQRCode": 0.15,
+        "additionalScan": 0.003,
+        "extendExpiration": 0.03,
+        "lifetimeQRUpgrade": 1
+      },
+      "defaultQRSettings": {
+        "expirationDays": 365,
+        "isDynamic": true,
+        "isLifetime": false
+      },
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": 4,
+      "name": "Enterprise",
+      "description": "For large organizations with custom needs",
+      "monthlyPrice": 99.99,
+      "isActive": true,
+      "features": {
+        "maxQRCodes": -1,
+        "maxScansPerMonth": -1,
+        "maxExpirationDays": -1,
+        "allowLifetimeQR": true,
+        "allowDynamicQR": true,
+        "customBranding": true,
+        "analytics": "enterprise",
+        "support": "dedicated"
+      },
+      "costs": {
+        "additionalQRCode": 0.1,
+        "additionalScan": 0.001,
+        "extendExpiration": 0.01,
+        "lifetimeQRUpgrade": 0.5
+      },
+      "defaultQRSettings": {
+        "expirationDays": -1,
+        "isDynamic": true,
+        "isLifetime": true
+      },
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-09-01T00:00:00Z"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": 1,
+      "name": "Back to School 2025",
+      "description": "50% off all plans for students and educators",
+      "type": "percentage_discount",
+      "value": 50,
+      "isActive": true,
+      "startDate": "2025-08-15T00:00:00Z",
+      "endDate": "2025-10-15T23:59:59Z",
+      "applicableTiers": [
+        2,
+        3
+      ],
+      "targetAudience": "students",
+      "conditions": {
+        "minSubscriptionMonths": 3,
+        "requiresEmailVerification": true,
+        "maxUsesPerUser": 1,
+        "totalMaxUses": 1000
+      },
+      "currentUses": 127,
+      "createdAt": "2025-08-01T00:00:00Z",
+      "createdBy": 1
+    },
+    {
+      "id": 2,
+      "name": "Holiday Special",
+      "description": "Free upgrade to Professional for Black Friday",
+      "type": "tier_upgrade",
+      "targetTier": 3,
+      "isActive": false,
+      "startDate": "2025-11-24T00:00:00Z",
+      "endDate": "2025-11-30T23:59:59Z",
+      "applicableTiers": [
+        1,
+        2
+      ],
+      "targetAudience": "all",
+      "conditions": {
+        "minSubscriptionMonths": 12,
+        "requiresEmailVerification": false,
+        "maxUsesPerUser": 1,
+        "totalMaxUses": 500
+      },
+      "currentUses": 0,
+      "createdAt": "2025-09-01T00:00:00Z",
+      "createdBy": 1
+    },
+    {
+      "id": 3,
+      "name": "Loyalty Rewards",
+      "description": "20% discount for users with 6+ months activity",
+      "type": "loyalty_discount",
+      "value": 20,
+      "isActive": true,
+      "startDate": "2025-01-01T00:00:00Z",
+      "endDate": "2025-12-31T23:59:59Z",
+      "applicableTiers": [
+        2,
+        3,
+        4
+      ],
+      "targetAudience": "loyal_users",
+      "conditions": {
+        "minActivityMonths": 6,
+        "minScansPerMonth": 100,
+        "requiresEmailVerification": false,
+        "maxUsesPerUser": -1,
+        "totalMaxUses": -1
+      },
+      "currentUses": 234,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "createdBy": 1
+    }
+  ],
+  "userSubscriptions": [
+    {
+      "id": 1,
+      "userId": 1,
+      "pricingTierId": 3,
+      "customPricing": null,
+      "appliedCampaigns": [
+        3
+      ],
+      "status": "active",
+      "currentPeriodStart": "2025-08-11T00:00:00Z",
+      "currentPeriodEnd": "2025-09-11T00:00:00Z",
+      "nextBillingDate": "2025-09-11T00:00:00Z",
+      "discountPercentage": 20,
+      "effectiveMonthlyPrice": 23.99,
+      "usage": {
+        "qrCodesUsed": 25,
+        "scansThisMonth": 2340,
+        "overageCharges": 0
+      },
+      "createdAt": "2025-08-11T00:00:00Z",
+      "updatedAt": "2025-09-10T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "userId": 2,
+      "pricingTierId": 2,
+      "customPricing": {
+        "monthlyPrice": 7.99,
+        "reason": "Student discount - manual override",
+        "features": {
+          "maxQRCodes": 75,
+          "maxScansPerMonth": 3000
+        }
+      },
+      "appliedCampaigns": [
+        1
+      ],
+      "status": "active",
+      "currentPeriodStart": "2025-09-01T00:00:00Z",
+      "currentPeriodEnd": "2025-10-01T00:00:00Z",
+      "nextBillingDate": "2025-10-01T00:00:00Z",
+      "discountPercentage": 50,
+      "effectiveMonthlyPrice": 3.995,
+      "usage": {
+        "qrCodesUsed": 12,
+        "scansThisMonth": 890,
+        "overageCharges": 0
+      },
+      "createdAt": "2025-09-01T00:00:00Z",
+      "updatedAt": "2025-09-10T00:00:00Z"
+    },
+    {
+      "id": 3,
+      "userId": 3,
+      "pricingTierId": 1,
+      "customPricing": null,
+      "appliedCampaigns": [],
+      "status": "active",
+      "currentPeriodStart": "2025-06-10T00:00:00Z",
+      "currentPeriodEnd": "2025-07-10T00:00:00Z",
+      "nextBillingDate": "2025-07-10T00:00:00Z",
+      "discountPercentage": 0,
+      "effectiveMonthlyPrice": 0,
+      "usage": {
+        "qrCodesUsed": 8,
+        "scansThisMonth": 12,
+        "overageCharges": 4
+      },
+      "createdAt": "2025-06-10T00:00:00Z",
+      "updatedAt": "2025-09-10T00:00:00Z"
+    },
+    {
+      "userId": 1,
+      "pricingTierId": 2,
+      "customPricing": null,
+      "appliedCampaigns": [],
+      "isActive": true,
+      "startDate": "2025-09-11T00:00:00.000Z",
+      "endDate": "2026-09-10T00:00:00.000Z",
+      "billingCycle": "yearly",
+      "updatedAt": "2025-09-11T13:32:29.520Z",
+      "id": 1757597549520,
+      "createdAt": "2025-09-11T13:32:29.520Z"
+    }
+  ],
+  "billingEvents": [
+    {
+      "id": 1,
+      "userId": 1,
+      "subscriptionId": 1,
+      "type": "monthly_subscription",
+      "amount": 23.99,
+      "description": "Professional plan with 20% loyalty discount",
+      "status": "paid",
+      "billingDate": "2025-08-11T00:00:00Z",
+      "paidAt": "2025-08-11T00:15:00Z"
+    },
+    {
+      "id": 2,
+      "userId": 3,
+      "subscriptionId": 3,
+      "type": "overage_charge",
+      "amount": 4,
+      "description": "8 additional scans beyond quota",
+      "status": "pending",
+      "billingDate": "2025-09-10T00:00:00Z",
+      "details": {
+        "additionalScans": 8,
+        "costPerScan": 0.5
+      }
+    }
+  ],
+  "qrCodeTypes": [
+    {
+      "id": 1,
+      "name": "temporary",
+      "displayName": "Temporary QR",
+      "description": "Short-lived QR codes perfect for events",
+      "maxExpirationDays": 30,
+      "isDynamic": false,
+      "features": [
+        "basic_analytics"
+      ],
+      "availableInTiers": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": 2,
+      "name": "standard",
+      "displayName": "Standard QR",
+      "description": "Dynamic QR codes with moderate lifespan",
+      "maxExpirationDays": 365,
+      "isDynamic": true,
+      "features": [
+        "basic_analytics",
+        "url_editing"
+      ],
+      "availableInTiers": [
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": 3,
+      "name": "lifetime",
+      "displayName": "Lifetime QR",
+      "description": "Permanent QR codes with full features",
+      "maxExpirationDays": -1,
+      "isDynamic": true,
+      "features": [
+        "advanced_analytics",
+        "url_editing",
+        "custom_branding"
+      ],
+      "availableInTiers": [
+        2,
+        3,
+        4
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "john_doe",
+      "email": "john@example.com",
+      "createdAt": "2025-08-15T10:30:00Z",
+      "lastLoginAt": "2025-09-10T14:22:00Z",
+      "isActive": true,
+      "activityScore": 85,
+      "loyaltyMonths": 8,
+      "quota": {
+        "maxQRCodes": 200,
+        "maxScansPerMonth": 10000,
+        "currentQRCodes": 25,
+        "currentMonthScans": 2340
+      },
+      "stats": {
+        "totalQRCodes": 25,
+        "totalScans": 15680,
+        "scansThisWeek": 145,
+        "scansLastWeek": 123,
+        "avgScansPerQR": 627,
+        "loginCount": 42
+      }
+    },
+    {
+      "id": 2,
+      "username": "sarah_wilson",
+      "email": "sarah@example.com",
+      "createdAt": "2025-07-22T09:15:00Z",
+      "lastLoginAt": "2025-09-11T08:45:00Z",
+      "isActive": true,
+      "activityScore": 72,
+      "loyaltyMonths": 2,
+      "quota": {
+        "maxQRCodes": 75,
+        "maxScansPerMonth": 3000,
+        "currentQRCodes": 12,
+        "currentMonthScans": 890
+      },
+      "stats": {
+        "totalQRCodes": 12,
+        "totalScans": 4560,
+        "scansThisWeek": 67,
+        "scansLastWeek": 89,
+        "avgScansPerQR": 380,
+        "loginCount": 28
+      }
+    },
+    {
+      "id": 3,
+      "username": "mike_inactive",
+      "email": "mike@example.com",
+      "createdAt": "2025-06-10T16:20:00Z",
+      "lastLoginAt": "2025-08-20T12:30:00Z",
+      "isActive": false,
+      "activityScore": 15,
+      "loyaltyMonths": 3,
+      "quota": {
+        "maxQRCodes": 5,
+        "maxScansPerMonth": 100,
+        "currentQRCodes": 8,
+        "currentMonthScans": 12
+      },
+      "stats": {
+        "totalQRCodes": 8,
+        "totalScans": 234,
+        "scansThisWeek": 2,
+        "scansLastWeek": 8,
+        "avgScansPerQR": 29,
+        "loginCount": 5
+      }
+    }
+  ],
+  "adminStats": {
+    "totalUsers": 3,
+    "activeUsersThisWeek": 2,
+    "activeUsersLastWeek": 2,
+    "totalQRCodes": 45,
+    "totalScans": 20474,
+    "scansThisWeek": 214,
+    "scansLastWeek": 220,
+    "usageGrowth": -2.7,
+    "avgQRCodesPerUser": 15,
+    "avgScansPerUser": 6824.7,
+    "revenueThisMonth": 27.985,
+    "revenueLastMonth": 33.98,
+    "averageRevenuePerUser": 9.33
+  },
+  "userQRCodes": [
+    {
+      "id": 1,
+      "userId": 1,
+      "title": "Company Website",
+      "targetUrl": "https://company.com",
+      "totalScans": 1234,
+      "qrType": "lifetime",
+      "expiresAt": null,
+      "createdAt": "2025-09-01T10:00:00Z",
+      "lastScannedAt": "2025-09-11T08:30:00Z"
+    },
+    {
+      "id": 2,
+      "userId": 1,
+      "title": "Product Demo",
+      "targetUrl": "https://demo.company.com",
+      "totalScans": 856,
+      "qrType": "standard",
+      "expiresAt": "2026-09-05T14:20:00Z",
+      "createdAt": "2025-09-05T14:20:00Z",
+      "lastScannedAt": "2025-09-10T16:45:00Z"
+    },
+    {
+      "id": 3,
+      "userId": 2,
+      "title": "Portfolio",
+      "targetUrl": "https://sarah-portfolio.com",
+      "totalScans": 423,
+      "qrType": "standard",
+      "expiresAt": "2026-08-28T09:15:00Z",
+      "createdAt": "2025-08-28T09:15:00Z",
+      "lastScannedAt": "2025-09-11T07:20:00Z"
+    },
+    {
+      "id": 4,
+      "userId": 3,
+      "title": "Old Campaign",
+      "targetUrl": "https://oldcampaign.com",
+      "totalScans": 12,
+      "qrType": "temporary",
+      "expiresAt": "2025-08-15T12:00:00Z",
+      "createdAt": "2025-07-15T12:00:00Z",
+      "lastScannedAt": "2025-08-20T10:30:00Z"
+    }
+  ]
+}

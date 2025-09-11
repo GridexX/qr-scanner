@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import QRList from './components/QRList';
 import QRDetail from './components/QRDetail';
 import CreateQR from './components/CreateQR';
+import AdminDashboard from './components/AdminDashboard';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -47,6 +48,7 @@ function ProtectedRoutes() {
         <Route path="/qr-codes" element={<QRList />} />
         <Route path="/qr-codes/new" element={<CreateQR />} />
         <Route path="/qr-codes/:id" element={<QRDetail />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>

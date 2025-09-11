@@ -97,6 +97,12 @@ func main() {
 		api.GET("/analytics/timeseries", h.GetTimeSeriesData)
 	}
 
+	// api.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
+	// {
+	// 	// User management - Admin only
+	// 	api.GET("/users", h.ListUsers)
+	// }
+
 	port := getEnv("PORT", "8080")
 	log.Printf("Server starting on port %s", port)
 	r.Run(":" + port)

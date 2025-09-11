@@ -99,14 +99,14 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	query := `
-		SELECT u.id, u.username, u.created_at, u.password_hash
+		SELECT u.id, u.username, u.created_at, u.password_hash, u.role
 		FROM users u
 		WHERE u.username = ?
 	`
 
 	var user models.User
 	var userPasswordHash string
-	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.Username, &user.CreatedAt, &userPasswordHash); err != nil {
+	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.Username, &user.CreatedAt, &userPasswordHash, &user.Role); err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
@@ -126,12 +126,14 @@ func (h *Handler) Login(c *gin.Context) {
 		ID:        user.ID,
 		Username:  user.Username,
 		CreatedAt: user.CreatedAt,
+		Role:      user.Role,
 	}
 
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": userResponse.Username,
 		"userID":   userResponse.ID,
+		"role":     user.Role,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
@@ -670,4 +672,9 @@ func (h *Handler) GetTimeSeriesData(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, timeSeries)
+}
+
+
+func ListUsers(c *gin.Context) {
+
 }
