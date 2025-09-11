@@ -1,15 +1,13 @@
 package handlers
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/GridexX/qr-tracker/internal/database"
 	"github.com/GridexX/qr-tracker/internal/models"
 	"github.com/GridexX/qr-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
@@ -23,14 +21,6 @@ type Handler struct {
 
 func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
-}
-
-func generateUniqueCode() (string, error) {
-	bytes := make([]byte, 4)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(bytes), nil
 }
 
 func (h *Handler) findUser(username string) (*models.User, error) {
@@ -72,7 +62,7 @@ func (h *Handler) Signin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
 		return
 	}
-	userCodeId, err := generateUniqueCode()
+	userCodeId, err := database.GenerateUniqueCode()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate user code"})
 		return
@@ -99,14 +89,6 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	adminUsername := os.Getenv("ADMIN_USERNAME")
-	adminPassword := os.Getenv("ADMIN_PASSWORD")
-
-	if adminUsername == "" || adminPassword == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Admin credentials not configured"})
-		return
-	}
-
 	query := `
 		SELECT u.id, u.user_code_id, u.username, u.created_at, u.password_hash
 		FROM users u
@@ -116,11 +98,9 @@ func (h *Handler) Login(c *gin.Context) {
 	var user models.User
 	if err := h.db.QueryRow(query, req.Username).Scan(&user.ID, &user.UserCodeID, &user.Username, &user.CreatedAt, &user.PasswordHash); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("[LOGIN] User not found: %s", req.Username)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
-		log.Printf("[LOGIN] DB error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve user"})
 		return
 	}
@@ -130,20 +110,6 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-
-	// TODO Add the admin username on the users table and check against it
-	// During the initial setup
-	// if req.Username != adminUsername {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-	// 	return
-	// }
-
-	// // For simplicity, we'll compare plain text password
-	// // In production, you should hash the admin password
-	// if req.Password != adminPassword {
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-	// 	return
-	// }
 
 	// Generate JWT token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -191,7 +157,7 @@ func (h *Handler) CreateQR(c *gin.Context) {
 	}
 
 	// Generate unique code
-	code, err := generateUniqueCode()
+	code, err := database.GenerateUniqueCode()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate QR code"})
 		return

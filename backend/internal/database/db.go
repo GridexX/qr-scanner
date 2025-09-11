@@ -1,16 +1,30 @@
 package database
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"os"
 	"strings"
 
+	"github.com/GridexX/qr-tracker/internal/utils"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
 )
 
+func GenerateUniqueCode() (string, error) {
+	bytes := make([]byte, 4)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
 func Initialize() (*sql.DB, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
+	adminUsername := os.Getenv("ADMIN_USERNAME")
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+
 	if databaseURL == "" {
 		databaseURL = "file:./data/qr_tracker.db"
 	}
@@ -29,7 +43,35 @@ func Initialize() (*sql.DB, error) {
 		return nil, err
 	}
 
+	adminPasswordHash, err := utils.HashPassword(adminPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := createAdminAccount(db, adminUsername, adminPasswordHash); err != nil {
+		return nil, err
+	}
+
 	return db, nil
+}
+
+func createAdminAccount(db *sql.DB, username, passwordHash string) error {
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?)", username).Scan(&exists)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return nil // Admin account already exists
+	}
+
+	adminCode, err := GenerateUniqueCode()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec("INSERT INTO users (user_code_id, username, password_hash) VALUES (?, ?, ?)", adminCode, username, passwordHash)
+	return err
 }
 
 func createTables(db *sql.DB) error {
