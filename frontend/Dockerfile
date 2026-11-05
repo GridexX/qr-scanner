@@ -3,6 +3,14 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments
+ARG BACKEND_URL
+ARG GTM_ID
+
+# Set environment variables from build args
+ENV REACT_APP_API_URL=$BACKEND_URL
+ENV REACT_APP_GTM_ID=$GTM_ID
+
 # Copy package files
 COPY package*.json ./
 

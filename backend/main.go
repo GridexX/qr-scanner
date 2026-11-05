@@ -43,17 +43,46 @@ func main() {
 	}
 
 	// CORS middleware
+	frontendURL := getEnv("FRONTEND_URL", "http://localhost:3000")
+	allowedOrigins := []string{frontendURL}
+
+	// Add localhost for development if we're not already using it
+	if frontendURL != "http://localhost:3000" {
+		allowedOrigins = append(allowedOrigins, "http://localhost:3000")
+		allowedOrigins = append(allowedOrigins, "http://localhost:3001") // Common dev port
+	}
+
+	log.Printf("CORS Configuration:")
+	log.Printf("  Allowed Origins: %v", allowedOrigins)
+	log.Printf("  Frontend URL from env: %s", frontendURL)
+
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{getEnv("FRONTEND_URL", "http://localhost:3000")},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
+	// Add custom CORS debugging middleware
+	r.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin != "" {
+			log.Printf("Request from Origin: %s", origin)
+			log.Printf("Request Method: %s", c.Request.Method)
+			log.Printf("Request Path: %s", c.Request.URL.Path)
+		}
+		c.Next()
+	})
+
 	// Public routes
 	r.POST("/api/auth/login", h.Login)
 	r.GET("/r/:code", h.RedirectQR)                 // QR code redirect route
 	r.Static("/data/qr_images", "./data/qr_images") // Serve QR code images
+
+	// Health check endpoint
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	// Protected routes
 	api := r.Group("/api")

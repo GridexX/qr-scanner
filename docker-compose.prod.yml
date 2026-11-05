@@ -1,44 +1,50 @@
 services:
   backend:
     image: gridexx/qr-tracker-backend:latest
-    ports:
-      - "8080:8080"
+    container_name: qr-backend
+    expose:
+      - "8080"
     environment:
       - DATABASE_URL=${DATABASE_URL:-file:/app/data/qr_tracker.db}
       - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - BASE_URL=${BACKEND_URL:-http://localhost:8080}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
       - GTM_ID=${GTM_ID:-}
       - IPGEOLOCATION_API_KEY=${IPGEOLOCATION_API_KEY:-}
+      - GIN_MODE=${GIN_MODE:-release}
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     volumes:
       - qr-data:/app/data
     restart: unless-stopped
     networks:
       - qr-network
+      - npm
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/analytics/overview"]
-      interval: 30s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 5s
 
   frontend:
     image: gridexx/qr-tracker-frontend:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8080}
-      - REACT_APP_GTM_ID=${GTM_ID:-}
+    container_name: qr-frontend
+    expose:
+      - "3000"
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     networks:
       - qr-network
+      - npm
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://0.0.0.0:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -46,7 +52,8 @@ services:
 
 networks:
   qr-network:
-    driver: bridge
+  npm:
+    external: true
 
 volumes:
   qr-data:

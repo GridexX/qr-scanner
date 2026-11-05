@@ -40,7 +40,7 @@ const CreateQR = () => {
   return (
     <div className="px-4 py-6 sm:px-0">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create QR Code</h1>
+        <h1 className="text-2xl font-bold text-gray-900" style={{fontFamily: "Permanent Marker"}}>Create QR Code</h1>
         <p className="mt-2 text-gray-600">Generate a new QR code with tracking capabilities</p>
       </div>
 

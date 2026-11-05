@@ -1,10 +1,10 @@
 # QR Code Tracker
 
-[![Build and Deploy](https://github.com/GridexX/qr-code-scanner/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/GridexX/qr-code-scanner/actions/workflows/ci-cd.yml)
+[![Build and Deploy](https://github.com/GridexX/qr-scanner/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/GridexX/qr-scanner/actions/workflows/ci-cd.yml)
 [![Docker Backend](https://img.shields.io/docker/pulls/gridexx/qr-tracker-backend)](https://hub.docker.com/r/gridexx/qr-tracker-backend)
 [![Docker Frontend](https://img.shields.io/docker/pulls/gridexx/qr-tracker-frontend)](https://hub.docker.com/r/gridexx/qr-tracker-frontend)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/GridexX/qr-code-scanner?filename=backend%2Fgo.mod)](https://golang.org/)
-[![License](https://img.shields.io/github/license/GridexX/qr-code-scanner)](LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/GridexX/qr-scanner?filename=backend%2Fgo.mod)](https://golang.org/)
+[![License](https://img.shields.io/github/license/GridexX/qr-scanner)](LICENSE)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com/)
 
 A comprehensive QR code generation and analytics application built with Go (backend) and React (frontend). Perfect for business cards, marketing campaigns, and any use case where you need to track QR code interactions.
