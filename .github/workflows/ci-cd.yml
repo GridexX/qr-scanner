@@ -204,7 +204,7 @@ jobs:
 
     steps:
     - name: Run Trivy vulnerability scanner for backend
-      uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
       with:
         image-ref: '${{ env.REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:latest'
         format: 'sarif'
@@ -217,7 +217,7 @@ jobs:
         sarif_file: 'backend-trivy-results.sarif'
 
     - name: Run Trivy vulnerability scanner for frontend
-      uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
       with:
         image-ref: '${{ env.REGISTRY }}/${{ secrets.DOCKER_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:latest'
         format: 'sarif'
